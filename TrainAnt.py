@@ -50,7 +50,57 @@ if __name__ == '__main__':
     
    
     expert = train_expert(env)
-    #transitions = sample_expert_transitions(expert, env_id='Ant-v4')
+    transitions = sample_expert_transitions(expert, env_id='Ant-v4')
+    
+    rewards_pre = []  
+    rewards_post = []
+    
+    bc_trainer = bc.BC(
+        observation_space=env.observation_space,
+        action_space=env.action_space,
+        demonstrations=transitions,
+        rng=rng,
+    )
+
+    reward, _ = evaluate_policy(
+        bc_trainer.policy,  # type: ignore[arg-type]
+        env,
+        n_eval_episodes=3,
+        render=True,
+    )
+    
+    print(f"Reward before training: {reward}")
+    rewards_pre.append(reward)
+    
+    print("Training a policy using Behavior Cloning")
+    bc_trainer.train(n_epochs=1)
+
+    reward, _ = evaluate_policy(
+        bc_trainer.policy,  # type: ignore[arg-type]
+        env,
+        n_eval_episodes=3,
+        render=True,
+    )
+    
+    rewards_post.append(reward)
+    print(f"Reward after training: {reward}")
+    
+
+    
+    csv_file = 'AntExpert_PreReward.csv'
+    with open(csv_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Episode', 'Reward'])  # Write the header
+        for episode, reward in enumerate(rewards_pre, start=1):
+            writer.writerow([episode, reward])
+
+    csv_file = 'AntExpert_PreReward.csv'
+        with open(csv_file, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Episode', 'Reward'])  # Write the header
+            for episode, reward in enumerate(rewards_post, start=1):
+                writer.writerow([episode, reward])
     
     print('Saving the model!')
     expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert.zip")
+    bc_trainer.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_Shadow.zip")
