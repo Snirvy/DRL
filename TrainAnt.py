@@ -1,10 +1,10 @@
 import gymnasium as gym ### watch out
 import numpy as np
-from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.ppo import MlpPolicy
+from stable_baselines3.sac import MlpPolicy
 
 from imitation.algorithms import bc
 from imitation.data import rollout
@@ -15,16 +15,16 @@ rng = np.random.default_rng(999)
 
 def train_expert(env):
     print("Training a expert.")
-    expert = PPO(
+    expert = SAC(
         policy=MlpPolicy,
         env=env,
         
     )
     for i in range(300):
         expert.learn(10_000)
-    print('Checkpoint reached! epoch {}'.format(i))
-    print('Saving the model!')
-    expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert.zip")        # Note: change this to 100000 to train a decent expert.
+        print('Checkpoint reached! epoch {}'.format(i))
+        print('Saving the model!')
+        expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_SAC.zip")        # Note: change this to 100000 to train a decent expert.
     return expert
 
 def sample_expert_transitions(expert, env_id):
@@ -83,24 +83,28 @@ if __name__ == '__main__':
     )
     
     rewards_post.append(reward)
-    print(f"Reward after training: {reward}")
     
+    
+    csv_expert = "C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_SAC_Reward.csv"
+    csv_shadow = "C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_SAC_Shadow.csv"
 
-    
-    csv_file = 'AntExpert_PreReward.csv'
-    with open(csv_file, 'w', newline='') as file:
+    # Open the CSV file in write mode
+    with open(csv_expert, mode='w') as file:
         writer = csv.writer(file)
-        writer.writerow(['Episode', 'Reward'])  # Write the header
-        for episode, reward in enumerate(rewards_pre, start=1):
-            writer.writerow([episode, reward])
 
-    csv_file = 'AntExpert_PreReward.csv'
-        with open(csv_file, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Episode', 'Reward'])  # Write the header
-            for episode, reward in enumerate(rewards_post, start=1):
-                writer.writerow([episode, reward])
+        # Write the list as a row in the CSV file
+        writer.writerow(rewards_pre)
+        
+    with open(csv_shadow, mode='w') as file:
+        writer = csv.writer(file)
+
+        # Write the list as a row in the CSV file
+        writer.writerow(rewards_post)
+
+
+
     
+ 
     print('Saving the model!')
-    expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert.zip")
-    bc_trainer.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_Shadow.zip")
+    expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_SAC.zip")
+    bc_trainer.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_SAC_Shadow.zip")
