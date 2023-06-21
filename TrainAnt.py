@@ -103,8 +103,7 @@ if __name__ == '__main__':
 
 
 
-    
- 
+   
     print('Saving the model!')
     expert.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_SAC.zip")
     bc_trainer.save("C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert_SAC_Shadow.zip")
