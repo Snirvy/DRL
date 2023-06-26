@@ -1,10 +1,11 @@
-#Evaluate Ant
-
+import gym
+from stable_baselines3 import SAC
+import os
 import gymnasium as gym ### watch out
 import numpy as np
-from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.sac import MlpPolicy
 
@@ -12,64 +13,75 @@ from imitation.algorithms import bc
 from imitation.data import rollout
 from imitation.data.wrappers import RolloutInfoWrapper
 import os 
-import csv
 
+from stable_baselines3.common.vec_env import VecNormalize
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
+import time
+from stable_baselines3 import SAC
+from stable_baselines3 import PPO
+
+import pandas as pd
+
+
+class ChangeMassWrapper(gym.Wrapper):
+    def __init__ (self, env, torso_mass =9):
+        super().__init__ (env)
+
+        self.torso_mass = torso_mass
+        self.env.model.body_mass[1] = self.torso_mass
 
 
 if __name__ == '__main__':
 
-
-    # Create the evaluation environment
-    eval_env = make_vec_env('Ant-v4', seed=0, vec_env_cls=SubprocVecEnv)
-
-    eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
-
-    # Load the trained SAC model
-    model = PPO.load('C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_Expert.zip')
-
-    # Define variables to store the rewards
-    episode_rewards = []
-    total_timesteps = 0
-
-    # Set the number of episodes for evaluation
+    # Define the number of episodes for evaluation
     num_eval_episodes = 100
 
-    # Evaluate the model
-    for episode in range(num_eval_episodes):
-        episode_reward = 0
-        done = False
-        obs = eval_env.reset()
+    # Define the range of torso masses
+    torso_masses = range(3, 10)
 
-        while not done:
-            # Use the model to predict actions
-            action, _ = model.predict(obs, deterministic=True)
+    # Initialize a DataFrame to hold all results
+    all_rewards_df = pd.DataFrame()
 
-            # Take the predicted action in the environment
-            obs, reward, done, _ = eval_env.step(action)
+    for torso_mass in torso_masses:
 
-            # Update the episode reward
-            episode_reward += reward
+        # Make environment with the given torso mass
+        env = make_vec_env('Hopper-v4', n_envs=1, seed=999, vec_env_cls=SubprocVecEnv, wrapper_class=ChangeMassWrapper, wrapper_kwargs=dict(torso_mass=torso_mass))
+        env = VecNormalize.load('Hopper_w9.pkl', env )
+        env.training = False
+        env.norm_reward = False
 
-            # Render the environment if desired
-            #eval_env.render()
 
-            # Increment the total timesteps
-            total_timesteps += 1
+        # Load the trained model
+        model = SAC.load("Hopper_W9.zip", env=env)
 
-        # Store the episode reward
-        episode_rewards.append(episode_reward.flatten())
-        print(f"Episode {episode + 1}: Reward = {episode_reward.flatten()}")
+        # Initialize variables
+        episode_rewards = []
+        total_timesteps = 0
 
-   
+        for episode in range(num_eval_episodes):
+            episode_reward = 0
+            done = False
+            obs = env.reset()
 
-    # Specify the file path and name for the CSV file
-    csv_file = "C:\\Users\\Gebruiker\\OneDrive\\Bureaublad\\Anita\'s stuff II\\Tilburg university\\DRL\\Ant\\Ant_PPO.csv"
+            while not done:
+                action, _ = model.predict(obs, deterministic=True)
+                obs, reward, done, _ = env.step(action)
 
-    # Open the CSV file in write mode
-    with open(csv_file, mode='w') as file:
-        writer = csv.writer(file)
+                episode_reward += reward
+                total_timesteps += 1
 
-        # Write the list as a row in the CSV file
-        writer.writerow(episode_rewards)
+            episode_rewards.append(episode_reward.flatten())
+            print(f"Torso Mass {torso_mass}, Episode {episode + 1}: Reward = {episode_reward.flatten()}")
 
-    print("List saved as CSV successfully!")
+        # Extract values from array and create a list
+        rewards = [arr[0] for arr in episode_rewards]
+
+        # Convert list to pandas DataFrame
+        df = pd.DataFrame(rewards, columns=[f'w{torso_mass}'])
+
+        # Concatenate the new results to the existing DataFrame
+        all_rewards_df = pd.concat([all_rewards_df, df], axis=1)
+
+    # Save the DataFrame with all results to a CSV file
+    all_rewards_df.to_csv('Hopper_W9.csv', index=False)
