@@ -47,13 +47,13 @@ if __name__ == '__main__':
 
         # Make environment with the given torso mass
         env = make_vec_env('Hopper-v4', n_envs=1, seed=999, vec_env_cls=SubprocVecEnv, wrapper_class=ChangeMassWrapper, wrapper_kwargs=dict(torso_mass=torso_mass))
-        env = VecNormalize.load('Hopper_w6.pkl', env )
+        env = VecNormalize.load('Hopper_w9.pkl', env )
         env.training = False
         env.norm_reward = False
 
 
         # Load the trained model
-        model = SAC.load("Hopper_W6.zip", env=env)
+        model = SAC.load("Hopper_W9.zip", env=env)
 
         # Initialize variables
         episode_rewards = []
@@ -84,4 +84,4 @@ if __name__ == '__main__':
         all_rewards_df = pd.concat([all_rewards_df, df], axis=1)
 
     # Save the DataFrame with all results to a CSV file
-    all_rewards_df.to_csv('Hopper_W6.csv', index=False)
+    all_rewards_df.to_csv('Hopper_W9.csv', index=False)
